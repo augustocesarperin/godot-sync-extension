@@ -25,12 +25,11 @@ label {
 .input-group input[type="text"] {
     flex-grow: 1;
     margin-right: 5px;
-    /* Estilos padrão do VS Code para inputs */
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border: 1px solid var(--vscode-input-border, var(--vscode-contrastBorder, transparent));
     padding: 4px;
-    box-sizing: border-box; /* Para o padding não aumentar o tamanho */
+    box-sizing: border-box;
 }
 
 .input-group input[type="text"]:focus {
@@ -39,7 +38,7 @@ label {
 }
 
 .input-group input[type="text"]:disabled {
-    background-color: var(--vscode-input-background); /* Manter cor de fundo */
+    background-color: var(--vscode-input-background);
     color: var(--vscode-disabledForeground);
     cursor: not-allowed;
     opacity: 0.7;
@@ -47,13 +46,12 @@ label {
 
 
 button {
-    /* Estilos padrão do VS Code para botões */
     background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
     border: 1px solid var(--vscode-contrastBorder, transparent);
     padding: 5px 10px;
     cursor: pointer;
-    white-space: nowrap; /* Evitar quebra de linha */
+    white-space: nowrap;
 }
 
 button:hover {
@@ -66,7 +64,7 @@ button:focus {
 }
 
 button:disabled {
-    background-color: var(--vscode-button-secondaryBackground, var(--vscode-button-background)); /* Usar cor secundária ou a padrão */
+    background-color: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
     color: var(--vscode-disabledForeground);
     cursor: not-allowed;
     opacity: 0.7;
@@ -77,7 +75,7 @@ button:disabled {
     margin-top: 10px;
     margin-bottom: 15px;
     display: flex;
-    gap: 10px; /* Espaço entre botões */
+    gap: 10px;
 }
 
 #status {
@@ -86,16 +84,16 @@ button:disabled {
 }
 
 #logArea {
-    flex-grow: 1; /* Ocupar espaço restante */
+    flex-grow: 1;
     width: 100%;
     box-sizing: border-box;
-    font-family: var(--vscode-editor-font-family, monospace); /* Fonte monoespaçada */
+    font-family: var(--vscode-editor-font-family, monospace);
     font-size: var(--vscode-editor-font-size);
     background-color: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border: 1px solid var(--vscode-input-border, var(--vscode-contrastBorder, transparent));
     padding: 5px;
-    resize: none; /* Impedir redimensionamento manual */
+    resize: none;
 }
 
 #logArea:focus {

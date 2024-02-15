@@ -1,4 +1,3 @@
-
 import * as vscode from 'vscode';
 import * as chokidar from 'chokidar';
 import * as fs from 'fs/promises';
@@ -12,7 +11,7 @@ export class SyncService {
     private sourceDir: string | null = null;
     private targetDir: string | null = null;
     private extensions: string[] = [];
-    private isRunning: boolean = false;
+    private isRunning = false;
     private log: LogFunction;
     private updateStatus: StatusFunction;
 
@@ -36,7 +35,6 @@ export class SyncService {
             return false;
         }
 
-        // Validar se os diretórios existem
         Promise.all([fs.stat(sourceDir), fs.stat(targetDir)])
             .then(([sourceStats, targetStats]) => {
                 if (!sourceStats.isDirectory() || !targetStats.isDirectory()) {
@@ -45,18 +43,18 @@ export class SyncService {
 
                 this.sourceDir = sourceDir;
                 this.targetDir = targetDir;
-                this.extensions = extensions.map(ext => ext.startsWith('.') ? ext : `.${ext}`); // Garantir que começa com '.'
+                this.extensions = extensions.map(ext => ext.startsWith('.') ? ext : `.${ext}`);
 
                 this.log(`Starting watcher on: ${this.sourceDir}`);
                 this.log(`Target directory: ${this.targetDir}`);
                 this.log(`Watching extensions: ${this.extensions.join(', ')}`);
 
                 this.watcher = chokidar.watch(this.sourceDir, {
-                    ignored: /(^|[\/\\])\../, // Ignorar dotfiles/dotfolders
+                    ignored: /(^|[\\\\])\../,
                     persistent: true,
-                    ignoreInitial: true, // Não processar arquivos existentes no início
-                    depth: undefined, // Monitorar subdiretórios recursivamente
-                    usePolling: false, // Usar eventos do sistema de arquivos (mais eficiente)
+                    ignoreInitial: true,
+                    depth: undefined,
+                    usePolling: false,
                 });
 
                 this.watcher
@@ -74,10 +72,10 @@ export class SyncService {
             .catch(error => {
                 this.log(`Error starting watcher: ${error.message}`);
                 vscode.window.showErrorMessage(`Godot Sync: Error starting - ${error.message}`);
-                this.stop(); // Garante que o estado seja limpo
+                this.stop();
             });
 
-        return true; // Retorna true indicando tentativa de início
+        return true;
     }
 
     public stop(): void {
@@ -92,7 +90,6 @@ export class SyncService {
                 this.updateStatus(this.isRunning);
             }).catch(err => {
                  this.log(`Error stopping watcher: ${err.message}`);
-                 // Mesmo com erro, consideramos parado
                  this.isRunning = false;
                  this.watcher = null;
                  this.sourceDir = null;
@@ -101,7 +98,7 @@ export class SyncService {
             });
         } else {
              this.log('Watcher already stopped.');
-             this.isRunning = false; // Garante que está false
+             this.isRunning = false;
              this.updateStatus(this.isRunning);
         }
     }
@@ -115,38 +112,27 @@ export class SyncService {
 
         const fileExtension = path.extname(filePath).toLowerCase();
         if (!this.extensions.includes(fileExtension)) {
-            // this.log(`Ignoring file (wrong extension): ${path.basename(filePath)}`);
-            return; // Ignorar se não for uma extensão monitorada
+            return;
         }
 
         const filename = path.basename(filePath);
-        const relativePath = path.relative(this.sourceDir, filePath); // Mantém estrutura de subpastas
+        const relativePath = path.relative(this.sourceDir, filePath);
         const targetPath = path.join(this.targetDir, relativePath);
         const targetSubDir = path.dirname(targetPath);
 
         try {
             if (eventType === 'add' || eventType === 'change') {
-                // Garantir que o subdiretório de destino exista
                 await fs.mkdir(targetSubDir, { recursive: true });
-                // Usar copyFile para sobrescrever se existir ou criar se não
                 await fs.copyFile(filePath, targetPath);
                 this.log(`Copied: ${relativePath}`);
             } else if (eventType === 'unlink') {
-                // Tentar remover o arquivo no destino apenas se ele existir
                 try {
-                    await fs.access(targetPath); // Verifica se o arquivo existe
+                    await fs.access(targetPath);
                     await fs.unlink(targetPath);
                     this.log(`Deleted: ${relativePath}`);
-
-                    // Opcional: Remover diretórios vazios no destino? (Pode ser complexo/arriscado)
-                    // await this.removeEmptyDirs(targetSubDir);
-
                 } catch (err: any) {
-                    // Se o erro for ENOENT (Not Found), significa que já foi removido ou nunca existiu lá. Ignorar.
                     if (err.code !== 'ENOENT') {
-                        throw err; // Relançar outros erros
-                    } else {
-                        // this.log(`Skipped delete (not found in target): ${relativePath}`);
+                        throw err;
                     }
                 }
             }
@@ -156,34 +142,10 @@ export class SyncService {
         }
     }
 
-    // Função auxiliar (opcional) para remover diretórios vazios recursivamente
-    // CUIDADO: Use com cautela. Pode deletar pastas inesperadas se a lógica não for perfeita.
-    /*
-    private async removeEmptyDirs(dirPath: string): Promise<void> {
-        if (!this.targetDir || !dirPath.startsWith(this.targetDir) || dirPath === this.targetDir) {
-            return; // Segurança: não sair do diretório alvo
-        }
-        try {
-            const files = await fs.readdir(dirPath);
-            if (files.length === 0) {
-                await fs.rmdir(dirPath);
-                this.log(`Removed empty directory: ${path.relative(this.targetDir, dirPath)}`);
-                // Tentar remover o pai também
-                await this.removeEmptyDirs(path.dirname(dirPath));
-            }
-        } catch (error: any) {
-             // Ignorar erros como diretório não vazio ou permissão, pode ser concorrência
-            if (error.code !== 'ENOTEMPTY' && error.code !== 'EPERM' && error.code !== 'EBUSY') {
-                 this.log(`Error removing empty dir ${dirPath}: ${error.message}`);
-            }
-        }
-    }
-    */
-
     private handleError(error: Error): void {
         this.log(`Watcher error: ${error.message}`);
         vscode.window.showErrorMessage(`Godot Sync Watcher Error: ${error.message}`);
-        this.stop(); // Parar em caso de erro grave no watcher
+        this.stop();
     }
 
     public dispose(): void {
