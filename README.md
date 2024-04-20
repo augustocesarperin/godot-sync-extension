@@ -23,7 +23,13 @@ VS Code extension to automatically synchronize files between a source folder (li
 
 *   
 pm install
-*   
-pm run compile or 
-pm run watch
+*   `npm run compile` or `npm run watch`
 *   Press F5 in VS Code to launch the Extension Development Host.
+
+## Author
+
+Developed by Augusto Cesar Perin (Abstratus Labs).
+
+## License
+
+MIT

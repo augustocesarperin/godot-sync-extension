@@ -110,3 +110,11 @@ button:disabled {
     border-left: 3px solid var(--vscode-editorWarning-foreground);
     background-color: var(--vscode-editorWarning-background);
 }
+
+footer {
+    margin-top: auto; /* Push to the bottom */
+    padding-top: 10px;
+    text-align: center;
+    font-size: calc(var(--vscode-font-size) * 0.8);
+    color: var(--vscode-descriptionForeground);
+}

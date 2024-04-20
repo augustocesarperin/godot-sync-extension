@@ -227,6 +227,10 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
                 <textarea id="logArea" readonly rows="10"></textarea>
 
                 <script nonce="${nonce}" src="${scriptUri}"></script>
+                
+                <footer>
+                    Developed by Augusto Cesar Perin (Abstratus Labs)
+                </footer>
             </body>
             </html>`;
     }
