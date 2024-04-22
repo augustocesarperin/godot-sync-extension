@@ -2,7 +2,7 @@
   "name": "godot-sync",
   "displayName": "Godot Project Sync",
   "description": "Automatically syncs files from a source directory to a Godot project directory.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "AbstratusLabs", 
   "author": {
     "name": "Augusto Cesar Perin"
