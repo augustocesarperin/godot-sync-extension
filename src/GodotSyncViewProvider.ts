@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises'; // Para ler o log inicial
 import { SyncService } from './SyncService';
 
-// Chaves para armazenamento no globalState
+
 const SOURCE_DIR_KEY = 'godotSync.sourceDir';
 const TARGET_DIR_KEY = 'godotSync.targetDir';
 const EXTENSIONS_KEY = 'godotSync.extensions';
@@ -17,8 +17,8 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private syncService: SyncService;
     private context: vscode.ExtensionContext;
-    private logBuffer: string[] = []; // Buffer para logs antes do webview carregar
-    private readonly maxLogLines = 200; // Limitar tamanho do log na memória/webview
+    private logBuffer: string[] = []; 
+    private readonly maxLogLines = 200; 
 
     constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
         this.context = context;
@@ -27,7 +27,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             (isRunning) => this.updateStatus(isRunning)
         );
 
-        // Carregar log persistido ao iniciar
+        
         this.logBuffer = this.context.globalState.get<string[]>(LOG_FILE_KEY, []);
     }
 
@@ -39,23 +39,22 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
         this._view = webviewView;
 
         webviewView.webview.options = {
-            // Habilitar scripts no webview
+            
             enableScripts: true,
-            // Restringir o webview a carregar conteúdo apenas do diretório 'media' e 'out'
+            
             localResourceRoots: [
                 vscode.Uri.joinPath(this._extensionUri, 'src', 'webview'),
                 vscode.Uri.joinPath(this._extensionUri, 'out') // Se houver recursos compilados
             ]
         };
 
-        // Definir o conteúdo HTML do webview
+        
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-        // Lidar com mensagens recebidas do webview
+        
         webviewView.webview.onDidReceiveMessage(message => {
             switch (message.command) {
                 case 'webviewLoaded':
-                    // Enviar configuração inicial quando o webview estiver pronto
                     this.sendInitialConfig();
                     break;
                 case 'selectSourceFolder':
@@ -76,14 +75,10 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             }
         });
 
-        // Lidar com o descarte do webview (ex: usuário fechou o painel)
         webviewView.onDidDispose(() => {
             this._view = undefined;
-            // Não paramos o serviço aqui, pois ele deve rodar em background
-            // this.syncService.stop(); // Descomente se quiser parar ao fechar o painel
         });
 
-        // Se o serviço já estiver rodando (ex: VS Code reiniciado), atualiza status
         this.updateStatus(this.syncService.getIsRunning());
     }
 
@@ -105,16 +100,13 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
     }
 
     private logMessage(message: string) {
-        // Adiciona ao buffer, limitando o tamanho
         this.logBuffer.push(message);
         if (this.logBuffer.length > this.maxLogLines) {
-            this.logBuffer.shift(); // Remove a linha mais antiga
+            this.logBuffer.shift(); 
         }
 
-        // Persistir log no estado global
         this.context.globalState.update(LOG_FILE_KEY, this.logBuffer);
 
-        // Envia para o webview se ele estiver visível
         if (this._view) {
             this._view.webview.postMessage({ command: 'log', data: message });
         }
@@ -126,7 +118,6 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    // --- Ações Disparadas pela UI (via Webview ou Comandos) ---
 
     public async selectFolder(configKey: string, messageCommand: string) {
         const options: vscode.OpenDialogOptions = {
@@ -196,23 +187,17 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
         this.syncService.stop();
     }
 
-    // Limpa o serviço ao desativar a extensão
     public dispose() {
         this.syncService.dispose();
     }
 
 
-    // --- Geração do HTML para o Webview ---
-    // Correção: Usar template literal (backticks `) para toda a string HTML
     private _getHtmlForWebview(webview: vscode.Webview): string {
-        // Obter URIs para os arquivos CSS e JS locais
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'webview', 'main.js'));
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'webview', 'main.css'));
 
-        // Obter um nonce para segurança (Content Security Policy)
         const nonce = getNonce();
 
-        // Correção: Envolver TODO o HTML em backticks (`)
         return `<!DOCTYPE html>
             <html lang="en">
             <head>

@@ -1,10 +1,9 @@
 // godot-sync-extension/src/webview/main.js
-// @ts-ignore
+//@ts-nocheck
 
-// Adquirir a API do VS Code para comunicação
 const vscode = acquireVsCodeApi();
 
-// Elementos da UI
+
 const sourceDirInput = document.getElementById('sourceDir');
 const targetDirInput = document.getElementById('targetDir');
 const extensionsInput = document.getElementById('extensions');
@@ -15,7 +14,7 @@ const stopButton = document.getElementById('stopButton');
 const logArea = document.getElementById('logArea');
 const statusDiv = document.getElementById('status');
 
-// Estado local (para evitar salvar estado na API do VSCode a cada keypress)
+
 let currentSourceDir = '';
 let currentTargetDir = '';
 let currentExtensions = '';
@@ -57,7 +56,7 @@ function addLogMessage(message) {
     logArea.scrollTop = logArea.scrollHeight; // Auto-scroll
 }
 
-// --- Tratamento de Eventos da UI ---
+
 
 selectSourceButton.addEventListener('click', () => {
     vscode.postMessage({ command: 'selectSourceFolder' });
@@ -68,13 +67,13 @@ selectTargetButton.addEventListener('click', () => {
 });
 
 startButton.addEventListener('click', () => {
-    // Salvar as extensões atuais antes de iniciar
+    
     currentExtensions = extensionsInput.value;
     vscode.postMessage({
         command: 'updateExtensions',
         data: currentExtensions
     });
-    // Pedir para iniciar (a extensão usará os valores salvos)
+    
     vscode.postMessage({ command: 'startSync' });
 });
 
@@ -82,7 +81,7 @@ stopButton.addEventListener('click', () => {
     vscode.postMessage({ command: 'stopSync' });
 });
 
-// Salvar extensões quando o usuário parar de digitar (debounce)
+
 let debounceTimer;
 extensionsInput.addEventListener('input', () => {
     clearTimeout(debounceTimer);
@@ -92,13 +91,13 @@ extensionsInput.addEventListener('input', () => {
             command: 'updateExtensions',
             data: currentExtensions
         });
-    }, 500); // Salva 500ms após parar de digitar
+    }, 500); 
 });
 
-// --- Tratamento de Mensagens da Extensão ---
+
 
 window.addEventListener('message', event => {
-    const message = event.data; // Dados enviados pela extensão
+    const message = event.data; 
 
     switch (message.command) {
         case 'updateConfig':
@@ -106,19 +105,18 @@ window.addEventListener('message', event => {
             currentTargetDir = message.data.targetDir || '';
             currentExtensions = message.data.extensions || '';
             isRunning = message.data.isRunning || false;
-            logArea.value = message.data.logContent || ''; // Carregar log inicial
+            logArea.value = message.data.logContent || ''; 
              if (logArea.value) logArea.scrollTop = logArea.scrollHeight;
             updateUIState();
             break;
         case 'updateSourceDir':
             currentSourceDir = message.data;
             sourceDirInput.value = currentSourceDir;
-            // Não precisa salvar aqui, a extensão já salvou
+            
             break;
         case 'updateTargetDir':
             currentTargetDir = message.data;
             targetDirInput.value = currentTargetDir;
-             // Não precisa salvar aqui, a extensão já salvou
             break;
         case 'updateStatus':
             isRunning = message.data.isRunning;
@@ -130,7 +128,7 @@ window.addEventListener('message', event => {
     }
 });
 
-// --- Inicialização ---
+
 
 // Informar à extensão que o webview está pronto para receber a configuração
 vscode.postMessage({ command: 'webviewLoaded' });
