@@ -1,0 +1,104 @@
+body {
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-sideBar-background);
+    padding: 10px;
+    box-sizing: border-box;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.input-group input[type="text"] {
+    flex-grow: 1;
+    margin-right: 5px;
+    /* Estilos padrão do VS Code para inputs */
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, var(--vscode-contrastBorder, transparent));
+    padding: 4px;
+    box-sizing: border-box; /* Para o padding não aumentar o tamanho */
+}
+
+.input-group input[type="text"]:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
+
+.input-group input[type="text"]:disabled {
+    background-color: var(--vscode-input-background); /* Manter cor de fundo */
+    color: var(--vscode-disabledForeground);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+
+button {
+    /* Estilos padrão do VS Code para botões */
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: 1px solid var(--vscode-contrastBorder, transparent);
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap; /* Evitar quebra de linha */
+}
+
+button:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+button:focus {
+     outline: 1px solid var(--vscode-focusBorder);
+     outline-offset: -1px;
+}
+
+button:disabled {
+    background-color: var(--vscode-button-secondaryBackground, var(--vscode-button-background)); /* Usar cor secundária ou a padrão */
+    color: var(--vscode-disabledForeground);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+
+.button-group {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 10px; /* Espaço entre botões */
+}
+
+#status {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+#logArea {
+    flex-grow: 1; /* Ocupar espaço restante */
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--vscode-editor-font-family, monospace); /* Fonte monoespaçada */
+    font-size: var(--vscode-editor-font-size);
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, var(--vscode-contrastBorder, transparent));
+    padding: 5px;
+    resize: none; /* Impedir redimensionamento manual */
+}
+
+#logArea:focus {
+     outline: 1px solid var(--vscode-focusBorder);
+     outline-offset: -1px;
+}

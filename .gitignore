@@ -1,0 +1,24 @@
+# Dependencies
+/node_modules
+# A linha /pnpm-lock.yaml foi REMOVIDA daqui. É recomendado versionar o lock file.
+
+# Build output
+/out
+*.vsix
+
+# VS Code settings specific to this project
+/.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Test results
+/coverage
+/.nyc_output
+
+# Misc
+.DS_Store
+*.pem
+*.log
