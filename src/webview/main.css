@@ -100,3 +100,13 @@ button:disabled {
      outline: 1px solid var(--vscode-focusBorder);
      outline-offset: -1px;
 }
+
+.warning-message {
+    font-size: var(--vscode-editor-font-size);
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 10px;
+    margin-top: -5px;
+    padding: 5px;
+    border-left: 3px solid var(--vscode-editorWarning-foreground);
+    background-color: var(--vscode-editorWarning-background);
+}

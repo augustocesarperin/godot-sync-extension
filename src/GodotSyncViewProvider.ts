@@ -134,14 +134,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             if (this._view) {
                 this._view.webview.postMessage({ command: messageCommand, data: selectedPath });
             }
-            // Correção: Usar template literal (backticks) para interpolação
             this.logMessage(`${configKey === SOURCE_DIR_KEY ? 'Source' : 'Target'} folder set to: ${selectedPath}`);
-            // Reiniciar se estiver rodando e a configuração mudar? Opcional.
-            // if (this.syncService.getIsRunning()) {
-            //     this.logMessage("Configuration changed, restarting sync...");
-            //     this.syncService.stop();
-            //     this.startSync();
-            // }
         }
     }
 
@@ -150,16 +143,9 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             const sanitizedExtensions = extensionsString.split(',')
                                                     .map(ext => ext.trim())
                                                     .filter(ext => ext.length > 0)
-                                                    .join(', '); // Salvar formatado
+                                                    .join(', ');
             await this.context.globalState.update(EXTENSIONS_KEY, sanitizedExtensions);
-             // Correção: Usar template literal (backticks) para interpolação
             this.logMessage(`Extensions updated to: ${sanitizedExtensions}`);
-            // Reiniciar se estiver rodando e as extensões mudarem? Opcional.
-            // if (this.syncService.getIsRunning()) {
-            //     this.logMessage("Extensions changed, restarting sync...");
-            //     this.syncService.stop();
-            //     this.startSync();
-            // }
         }
     }
 
@@ -227,6 +213,8 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
                 <div class="input-group">
                     <input type="text" id="extensions" placeholder=".gd, .tscn, .tres, .res, ...">
                 </div>
+
+                <p class="warning-message"><em>Warning: Sync is one-way (Source → Target). Changes made directly in the Target folder may be overwritten.</em></p>
 
                 <div id="status">Status: Initializing...</div>
 

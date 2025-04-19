@@ -1,5 +1,6 @@
-// godot-sync-extension/src/webview/main.js
 //@ts-nocheck
+
+// godot-sync-extension/src/webview/main.js
 
 const vscode = acquireVsCodeApi();
 
@@ -51,9 +52,9 @@ function updateUIState() {
 }
 
 function addLogMessage(message) {
-    const escapedMessage = message.replace(/</g, "<").replace(/>/g, ">"); // Sanitize
+    const escapedMessage = message.replace(/</g, "<").replace(/>/g, ">");
     logArea.value += escapedMessage + '\n';
-    logArea.scrollTop = logArea.scrollHeight; // Auto-scroll
+    logArea.scrollTop = logArea.scrollHeight;
 }
 
 
@@ -91,7 +92,7 @@ extensionsInput.addEventListener('input', () => {
             command: 'updateExtensions',
             data: currentExtensions
         });
-    }, 500); 
+    }, 500);
 });
 
 
@@ -105,7 +106,7 @@ window.addEventListener('message', event => {
             currentTargetDir = message.data.targetDir || '';
             currentExtensions = message.data.extensions || '';
             isRunning = message.data.isRunning || false;
-            logArea.value = message.data.logContent || ''; 
+            logArea.value = message.data.logContent || '';
              if (logArea.value) logArea.scrollTop = logArea.scrollHeight;
             updateUIState();
             break;

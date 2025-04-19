@@ -52,7 +52,6 @@ export class SyncService {
                 this.watcher = chokidar.watch(this.sourceDir, {
                     ignored: /(^|[\\\\])\../,
                     persistent: true,
-                    ignoreInitial: true,
                     depth: undefined,
                     usePolling: false,
                 });
@@ -66,6 +65,7 @@ export class SyncService {
                         this.log('Watcher ready.');
                         this.isRunning = true;
                         this.updateStatus(this.isRunning);
+                        this.initialSync();
                     });
 
             })
@@ -103,6 +103,33 @@ export class SyncService {
         }
     }
 
+    private async initialSync(): Promise<void> {
+        if (!this.sourceDir || !this.targetDir) return;
+        this.log('Starting initial sync...');
+        
+        const walk = async (dir: string) => {
+            const files = await fs.readdir(dir);
+            for (const file of files) {
+                const filePath = path.join(dir, file);
+                const stat = await fs.stat(filePath);
+                if (stat.isDirectory()) {
+                    await walk(filePath);
+                } else {
+                    await this.handleFileSync(filePath, 'add');
+                }
+            }
+        };
+
+        try {
+            await walk(this.sourceDir);
+            this.log('Initial sync completed.');
+        } catch (error: any) {
+            this.log(`Error during initial sync: ${error.message}`);
+            vscode.window.showErrorMessage(`Godot Sync: Initial sync error - ${error.message}`);
+            this.stop();
+        }
+    }
+
     public getIsRunning(): boolean {
         return this.isRunning;
     }
@@ -123,11 +150,31 @@ export class SyncService {
         try {
             if (eventType === 'add' || eventType === 'change') {
                 await fs.mkdir(targetSubDir, { recursive: true });
-                await fs.copyFile(filePath, targetPath);
-                this.log(`Copied: ${relativePath}`);
+
+                let shouldCopy = true; // Assume copy is needed by default
+                try {
+                    // Check if target exists and compare stats
+                    const targetStat = await fs.stat(targetPath);
+                    const sourceStat = await fs.stat(filePath);
+
+                    // Compare modification time (more precise) and size
+                    if (targetStat.mtimeMs === sourceStat.mtimeMs && targetStat.size === sourceStat.size) {
+                        shouldCopy = false;
+                    }
+                } catch (err: any) {                    
+                    if (err.code !== 'ENOENT') {
+                        this.log(`Warning: Could not get stats for ${relativePath} or its target. Proceeding with copy. Error: ${err.message}`);
+                    } 
+                }
+
+                if (shouldCopy) {
+                    await fs.copyFile(filePath, targetPath);
+                    this.log(`Copied: ${relativePath}`);
+                }
+
             } else if (eventType === 'unlink') {
                 try {
-                    await fs.access(targetPath);
+                    await fs.access(targetPath); // Check if target exists before trying to delete
                     await fs.unlink(targetPath);
                     this.log(`Deleted: ${relativePath}`);
                 } catch (err: any) {
