@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <title>Godot Sync</title>
+</head>
+<body>
+    <h2>GODOT SYNC: SYNC SETTINGS & LOG</h2>
+
+    <div>
+        <label for="sourceDir">Source Directory (e.g., Editor Scripts)</label>
+        <div class="control-group">
+            <input type="text" id="sourceDir" placeholder="Source Directory (e.g., Editor Scripts)">
+            <button id="selectSourceDir">Select Source</button>
+        </div>
+    </div>
+
+    <div>
+        <label for="targetDir">Target Directory (Godot Project)</label>
+        <div class="control-group">
+            <input type="text" id="targetDir" placeholder="Target Directory (Godot Project)">
+            <button id="selectTargetDir">Select Target</button>
+        </div>
+    </div>
+
+    <div>
+        <label for="extensions">Extensions (comma-separated)</label>
+        <input type="text" id="extensions" placeholder=".gd, .tscn, .tres, .res, .import, .shader, .json, .cfg">
+    </div>
+
+    <p class="warning">Warning: Sync is one-way (Source → Target). Changes made directly in the Target folder may be overwritten.</p>
+
+    <div id="status">Status: Initializing...</div>
+
+    <div class="button-group">
+        <button id="startSync">Start Sync</button>
+        <button id="stopSync" disabled>Stop Sync</button>
+    </div>
+    
+    <div>
+        <label for="logContainer">Sync Log:</label>
+        <textarea id="logContainer" rows="10" readonly></textarea>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

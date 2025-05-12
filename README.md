@@ -1,6 +1,8 @@
-# Godot Sync Extension
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/AbstratusLabs.godot-sync?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=AbstratusLabs.godot-sync)
+[![Visual Studio Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/AbstratusLabs.godot-sync?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=AbstratusLabs.godot-sync)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE.txt)
 
-VS Code extension to automatically synchronize files between a source folder (like editor scripts) and a Godot project folder.
+VS Code extension to automatically synchronize user-specified files (scripts, assets, etc.) for game projects on godot.
 
 ## Features
 
@@ -8,27 +10,26 @@ VS Code extension to automatically synchronize files between a source folder (li
 *   Configure file extensions to watch.
 *   Start/Stop synchronization via UI or commands.
 *   View synchronization log in the side panel.
-*   Settings are persisted.
-*   Runs in the background.
+## Installation
+
+install directly from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=AbstratusLabs.godot-sync).
 
 ## How to Use
 
-1.  Open the Godot Sync panel from the Activity Bar (Sync icon).
+1.  Open the Godot Sync panel from the Activity Bar.
 2.  Select the Source and Target (Godot project) folders.
-3.  Adjust the comma-separated list of extensions if needed.
 4.  Click 'Start Sync'.
 5.  Files matching the extensions created/modified/deleted in the source folder will be copied/deleted in the target folder.
 
 ## Development
 
-*   
-pm install
-*   `npm run compile` or `npm run watch`
+*   `npm install`
+*   `npm run build`
 *   Press F5 in VS Code to launch the Extension Development Host.
 
 ## Author
 
-Developed by Augusto Cesar Perin (Abstratus Labs).
+Augusto Cesar Perin (Abstratus Labs).
 
 ## License
 

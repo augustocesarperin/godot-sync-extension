@@ -151,20 +151,18 @@ export class SyncService {
             if (eventType === 'add' || eventType === 'change') {
                 await fs.mkdir(targetSubDir, { recursive: true });
 
-                let shouldCopy = true; // Assume copy is needed by default
+                let shouldCopy = true; 
                 try {
-                    // Check if target exists and compare stats
                     const targetStat = await fs.stat(targetPath);
                     const sourceStat = await fs.stat(filePath);
 
-                    // Compare modification time (more precise) and size
                     if (targetStat.mtimeMs === sourceStat.mtimeMs && targetStat.size === sourceStat.size) {
                         shouldCopy = false;
                     }
                 } catch (err: any) {                    
                     if (err.code !== 'ENOENT') {
                         this.log(`Warning: Could not get stats for ${relativePath} or its target. Proceeding with copy. Error: ${err.message}`);
-                    } 
+                    }
                 }
 
                 if (shouldCopy) {
@@ -174,7 +172,7 @@ export class SyncService {
 
             } else if (eventType === 'unlink') {
                 try {
-                    await fs.access(targetPath); // Check if target exists before trying to delete
+                    await fs.access(targetPath);
                     await fs.unlink(targetPath);
                     this.log(`Deleted: ${relativePath}`);
                 } catch (err: any) {

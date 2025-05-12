@@ -1,24 +1,22 @@
-// godot-sync-extension/src/GodotSyncViewProvider.ts
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs/promises'; // Para ler o log inicial
+import * as fs from 'fs/promises';
 import { SyncService } from './SyncService';
-
 
 const SOURCE_DIR_KEY = 'godotSync.sourceDir';
 const TARGET_DIR_KEY = 'godotSync.targetDir';
 const EXTENSIONS_KEY = 'godotSync.extensions';
-const LOG_FILE_KEY = 'godotSync.log'; // Armazenaremos o log no estado também
+const LOG_FILE_KEY = 'godotSync.log';
 
 export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
 
-    public static readonly viewType = 'godotSyncView'; // Deve corresponder ao ID em package.json
+    public static readonly viewType = 'godotSyncView';
 
     private _view?: vscode.WebviewView;
     private syncService: SyncService;
     private context: vscode.ExtensionContext;
-    private logBuffer: string[] = []; 
-    private readonly maxLogLines = 200; 
+    private logBuffer: string[] = [];
+    private readonly maxLogLines = 200;
 
     constructor(private readonly _extensionUri: vscode.Uri, context: vscode.ExtensionContext) {
         this.context = context;
@@ -26,8 +24,6 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             (message) => this.logMessage(message),
             (isRunning) => this.updateStatus(isRunning)
         );
-
-        
         this.logBuffer = this.context.globalState.get<string[]>(LOG_FILE_KEY, []);
     }
 
@@ -39,19 +35,15 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
         this._view = webviewView;
 
         webviewView.webview.options = {
-            
             enableScripts: true,
-            
             localResourceRoots: [
-                vscode.Uri.joinPath(this._extensionUri, 'src', 'webview'),
-                vscode.Uri.joinPath(this._extensionUri, 'out') // Se houver recursos compilados
+                vscode.Uri.joinPath(this._extensionUri, 'out', 'webview'),
+                vscode.Uri.joinPath(this._extensionUri, 'out')
             ]
         };
 
-        
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-        
         webviewView.webview.onDidReceiveMessage(message => {
             switch (message.command) {
                 case 'webviewLoaded':
@@ -82,8 +74,6 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
         this.updateStatus(this.syncService.getIsRunning());
     }
 
-    // --- Métodos de Comunicação com Webview ---
-
     private sendInitialConfig() {
         if (this._view) {
             const sourceDir = this.context.globalState.get<string>(SOURCE_DIR_KEY);
@@ -102,7 +92,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
     private logMessage(message: string) {
         this.logBuffer.push(message);
         if (this.logBuffer.length > this.maxLogLines) {
-            this.logBuffer.shift(); 
+            this.logBuffer.shift();
         }
 
         this.context.globalState.update(LOG_FILE_KEY, this.logBuffer);
@@ -117,7 +107,6 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             this._view.webview.postMessage({ command: 'updateStatus', data: { isRunning } });
         }
     }
-
 
     public async selectFolder(configKey: string, messageCommand: string) {
         const options: vscode.OpenDialogOptions = {
@@ -177,12 +166,11 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
         this.syncService.dispose();
     }
 
-
     private _getHtmlForWebview(webview: vscode.Webview): string {
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'webview', 'main.js'));
-        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'webview', 'main.css'));
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'main.js'));
+        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'main.css'));
 
-        const nonce = getNonce();
+        const nonce = getNonce(); // Chave de segurança para o script da tela.
 
         return `<!DOCTYPE html>
             <html lang="en">
@@ -236,7 +224,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
     }
 }
 
-// Função auxiliar para gerar nonces (necessário para CSP)
+// Cria uma chave de segurança (nonce) para proteger o script da tela da extensão.
 function getNonce() {
     let text = '';
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
