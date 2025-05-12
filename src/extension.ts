@@ -4,9 +4,6 @@ import { GodotSyncViewProvider } from './GodotSyncViewProvider';
 let viewProvider: GodotSyncViewProvider | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
-
-    console.log('Congratulations, your extension "godot-sync" is now active!');
-
     viewProvider = new GodotSyncViewProvider(context.extensionUri, context);
 
     context.subscriptions.push(
@@ -50,6 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    console.log('Deactivating "godot-sync" extension.');
-    viewProvider = undefined;
+    if (viewProvider) {
+        viewProvider = undefined;
+    }
 }

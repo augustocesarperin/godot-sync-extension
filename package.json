@@ -1,24 +1,24 @@
 {
   "name": "godot-sync",
   "displayName": "Godot Project Sync",
-  "description": "Automatically syncs files from a source directory to a Godot project directory.",
-  "version": "0.2.0",
-  "publisher": "AbstratusLabs", 
+  "description": "A VS Code extension that automatically synchronizes files (like .gd, .cs, .tscn) from a source directory to the target Godot game project, simplifying workflows.",
+  "version": "0.2.5",
+  "publisher": "AbstratusLabs",
   "author": {
     "name": "Augusto Cesar Perin"
   },
   "license": "MIT",
+  "readme": "./MARKETPLACE_README.md",
   "engines": {
-    "vscode": "^1.80.0" 
+    "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
   ],
   "activationEvents": [
     "onView:godotSyncView"
-   
   ],
-  "main": "./out/extension.js", 
+  "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
@@ -47,7 +47,7 @@
         {
           "id": "godot-sync-activitybar",
           "title": "Godot Sync",
-          "icon": "$(sync)" 
+          "icon": "$(sync)"
         }
       ]
     },
@@ -62,22 +62,25 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run build",
     "compile": "tsc -p ./",
+    "copy-webview-assets": "cpx \"src/webview/**/*.{css,js,html}\" out/webview",
+    "build": "npm run compile && npm run copy-webview-assets",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
-    "@types/vscode": "^1.80.0",
-    "@types/node": "18.x",
     "@types/chokidar": "^2.1.3",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^5.59.8",
     "@typescript-eslint/parser": "^5.59.8",
+    "cpx": "^1.5.0",
     "eslint": "^8.41.0",
     "typescript": "^5.1.3"
   },
   "dependencies": {
-    "chokidar": "^3.5.3" 
+    "chokidar": "^3.5.3"
   },
   "repository": {
     "type": "git",

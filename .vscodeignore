@@ -1,7 +1,6 @@
 .vscode/**
 .vscode-test/**
 src/**
-node_modules/**
 out/**/*.map
 *.vsix
 
@@ -10,13 +9,9 @@ out/**/*.map
 .gitignore
 .gitattributes
 
-# Config files
 tsconfig.json
 .eslintrc.json
 
-# Logs
+
 *.log
 
-# Other specific files (if any)
-# Example: temp_files/**
-# Example: *.tmp 
