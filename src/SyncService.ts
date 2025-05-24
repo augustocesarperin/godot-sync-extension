@@ -5,6 +5,10 @@ import * as path from 'path';
 
 type LogFunction = (message: string) => void;
 type StatusFunction = (isRunning: boolean) => void;
+type SyncOperation = {
+    filePath: string;
+    eventType: 'add' | 'change' | 'unlink';
+};
 
 export class SyncService {
     private watcher: chokidar.FSWatcher | null = null;
@@ -14,6 +18,9 @@ export class SyncService {
     private isRunning = false;
     private log: LogFunction;
     private updateStatus: StatusFunction;
+
+    private syncQueue: SyncOperation[] = [];
+    private isProcessingQueue = false;
 
     constructor(logCallback: LogFunction, statusCallback: StatusFunction) {
         this.log = (message) => {
@@ -57,9 +64,9 @@ export class SyncService {
                 });
 
                 this.watcher
-                    .on('add', (filePath) => this.handleFileSync(filePath, 'add'))
-                    .on('change', (filePath) => this.handleFileSync(filePath, 'change'))
-                    .on('unlink', (filePath) => this.handleFileSync(filePath, 'unlink'))
+                    .on('add', (filePath) => this.addToQueue(filePath, 'add'))
+                    .on('change', (filePath) => this.addToQueue(filePath, 'change'))
+                    .on('unlink', (filePath) => this.addToQueue(filePath, 'unlink'))
                     .on('error', (error) => this.handleError(error))
                     .on('ready', () => {
                         this.log('Watcher ready.');
@@ -87,6 +94,8 @@ export class SyncService {
                 this.watcher = null;
                 this.sourceDir = null;
                 this.targetDir = null;
+                this.syncQueue = [];
+                this.isProcessingQueue = false;
                 this.updateStatus(this.isRunning);
             }).catch(err => {
                  this.log(`Error stopping watcher: ${err.message}`);
@@ -103,26 +112,49 @@ export class SyncService {
         }
     }
 
+    private addToQueue(filePath: string, eventType: 'add' | 'change' | 'unlink'): void {
+        this.syncQueue.push({ filePath, eventType });
+        this.processQueue();
+    }
+    
+    private async processQueue(): Promise<void> {
+        if (this.isProcessingQueue || this.syncQueue.length === 0) {
+            return;
+        }
+        this.isProcessingQueue = true;
+    
+        const operation = this.syncQueue.shift();
+        if (operation) {
+            try {
+                await this.handleFileSync(operation.filePath, operation.eventType);
+            } catch (error: any) {
+                this.log(`Failed to process ${operation.filePath}. Error: ${error.message}`);
+            }
+        }
+    
+        this.isProcessingQueue = false;
+        this.processQueue();
+    }
+
     private async initialSync(): Promise<void> {
-        if (!this.sourceDir || !this.targetDir) return;
+        if (!this.sourceDir) return;
         this.log('Starting initial sync...');
         
         const walk = async (dir: string) => {
-            const files = await fs.readdir(dir);
+            const files = await fs.readdir(dir, { withFileTypes: true });
             for (const file of files) {
-                const filePath = path.join(dir, file);
-                const stat = await fs.stat(filePath);
-                if (stat.isDirectory()) {
+                const filePath = path.join(dir, file.name);
+                if (file.isDirectory()) {
                     await walk(filePath);
-                } else {
-                    await this.handleFileSync(filePath, 'add');
+                } else if (file.isFile()) {
+                    this.addToQueue(filePath, 'add');
                 }
             }
         };
 
         try {
             await walk(this.sourceDir);
-            this.log('Initial sync completed.');
+            this.log('Initial sync queued.');
         } catch (error: any) {
             this.log(`Error during initial sync: ${error.message}`);
             vscode.window.showErrorMessage(`Godot Sync: Initial sync error - ${error.message}`);
