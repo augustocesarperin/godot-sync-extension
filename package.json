@@ -2,7 +2,7 @@
   "name": "godot-sync",
   "displayName": "Godot Project Sync",
   "description": "A VS Code extension that automatically synchronizes files (like .gd, .cs, .tscn) from a source directory to the target Godot game project, simplifying workflows.",
-  "version": "0.2.5",
+  "version": "0.2.7",
   "publisher": "AbstratusLabs",
   "author": {
     "name": "Augusto Cesar Perin"

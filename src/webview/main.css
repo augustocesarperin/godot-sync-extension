@@ -112,7 +112,7 @@ button:disabled {
 }
 
 footer {
-    margin-top: auto; /* Push to the bottom */
+    margin-top: auto; 
     padding-top: 10px;
     text-align: center;
     font-size: calc(var(--vscode-font-size) * 0.8);

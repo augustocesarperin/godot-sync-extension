@@ -15,6 +15,7 @@ export class SyncService {
     private sourceDir: string | null = null;
     private targetDir: string | null = null;
     private extensions: string[] = [];
+    private allowDeletion = false;
     private isRunning = false;
     private log: LogFunction;
     private updateStatus: StatusFunction;
@@ -30,7 +31,7 @@ export class SyncService {
         this.updateStatus = statusCallback;
     }
 
-    public start(sourceDir: string, targetDir: string, extensions: string[]): boolean {
+    public start(sourceDir: string, targetDir: string, extensions: string[], allowDeletion: boolean): boolean {
         if (this.isRunning) {
             this.log('Sync service is already running.');
             return false;
@@ -51,10 +52,12 @@ export class SyncService {
                 this.sourceDir = sourceDir;
                 this.targetDir = targetDir;
                 this.extensions = extensions.map(ext => ext.startsWith('.') ? ext : `.${ext}`);
+                this.allowDeletion = allowDeletion;
 
                 this.log(`Starting watcher on: ${this.sourceDir}`);
                 this.log(`Target directory: ${this.targetDir}`);
                 this.log(`Watching extensions: ${this.extensions.join(', ')}`);
+                this.log(`File deletion is ${this.allowDeletion ? 'ENABLED' : 'DISABLED'}.`);
 
                 this.watcher = chokidar.watch(this.sourceDir, {
                     ignored: /(^|[\\\\])\../,
@@ -183,28 +186,38 @@ export class SyncService {
             if (eventType === 'add' || eventType === 'change') {
                 await fs.mkdir(targetSubDir, { recursive: true });
 
-                let shouldCopy = true; 
+                let sourceStat;
+                try {
+                    sourceStat = await fs.stat(filePath);
+                } catch (err: any) {
+                    if (err.code === 'ENOENT') {
+                        this.log(`Skipped (source file gone): ${relativePath}`);
+                        return;
+                    }
+                    throw err;
+                }
+
                 try {
                     const targetStat = await fs.stat(targetPath);
-                    const sourceStat = await fs.stat(filePath);
-
-                    if (targetStat.mtimeMs === sourceStat.mtimeMs && targetStat.size === sourceStat.size) {
-                        shouldCopy = false;
+                    if (sourceStat.mtimeMs <= targetStat.mtimeMs) {
+                        this.log(`Skipped (destination is newer): ${relativePath}`);
+                        return;
                     }
-                } catch (err: any) {                    
+                } catch (err: any) {
                     if (err.code !== 'ENOENT') {
-                        this.log(`Warning: Could not get stats for ${relativePath} or its target. Proceeding with copy. Error: ${err.message}`);
+                        this.log(`Warning: Could not stat target ${relativePath}. Proceeding. Error: ${err.message}`);
                     }
                 }
 
-                if (shouldCopy) {
-                    await fs.copyFile(filePath, targetPath);
-                    this.log(`Copied: ${relativePath}`);
-                }
+                await fs.copyFile(filePath, targetPath);
+                this.log(`Copied: ${relativePath}`);
 
             } else if (eventType === 'unlink') {
+                if (!this.allowDeletion) {
+                    this.log(`Deletion skipped (disabled): ${relativePath}`);
+                    return;
+                }
                 try {
-                    await fs.access(targetPath);
                     await fs.unlink(targetPath);
                     this.log(`Deleted: ${relativePath}`);
                 } catch (err: any) {

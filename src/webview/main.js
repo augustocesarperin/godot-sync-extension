@@ -9,10 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const sourceDirInput = document.getElementById('sourceDir');
         const targetDirInput = document.getElementById('targetDir');
         const extensionsInput = document.getElementById('extensions');
+        const allowDeletionCheckbox = document.getElementById('allowDeletion');
         const statusDiv = document.getElementById('status');
         const logArea = document.getElementById('logArea'); 
 
-        if (!sourceDirInput || !targetDirInput || !extensionsInput || !statusDiv || !logArea) {
+        if (!sourceDirInput || !targetDirInput || !extensionsInput || !statusDiv || !logArea || !allowDeletionCheckbox) {
             console.error("[Webview] Erro CRÍTICO inicial: Elementos essenciais da UI faltando no DOM após setTimeout. Verifique os IDs no HTML e no main.js.");
             if (statusDiv) statusDiv.textContent = 'Error: Critical UI elements missing!';
             return; 
@@ -21,10 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentSourceDir = '';
         let currentTargetDir = '';
         let currentExtensions = '';
+        let allowDeletion = false;
         let isRunning = false;
 
         function updateUIState() {
-            if (!sourceDirInput || !targetDirInput || !extensionsInput || !statusDiv) {
+            if (!sourceDirInput || !targetDirInput || !extensionsInput || !statusDiv || !allowDeletionCheckbox) {
                 console.error("[Webview] updateUIState: Elementos de input ou statusDiv são null!");
                 return;
             }
@@ -40,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sourceDirInput.value = currentSourceDir || '';
             targetDirInput.value = currentTargetDir || '';
             extensionsInput.value = currentExtensions || '';
+            allowDeletionCheckbox.checked = allowDeletion || false;
 
             if (isRunning) {
                 statusDiv.style.color = 'var(--vscode-editorWarning-foreground)';
@@ -51,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (extensionsInput) extensionsInput.disabled = true;
                 if (selectSourceButtonForUI) selectSourceButtonForUI.disabled = true;
                 if (selectTargetButtonForUI) selectTargetButtonForUI.disabled = true;
+                if (allowDeletionCheckbox) allowDeletionCheckbox.disabled = true;
             } else {
                 statusDiv.style.color = 'var(--vscode-foreground)';
                 statusDiv.textContent = 'Status: Stopped. Press Start Sync.';
@@ -61,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (extensionsInput) extensionsInput.disabled = false;
                 if (selectSourceButtonForUI) selectSourceButtonForUI.disabled = false;
                 if (selectTargetButtonForUI) selectTargetButtonForUI.disabled = false;
+                if (allowDeletionCheckbox) allowDeletionCheckbox.disabled = false;
             }
         }
         
@@ -136,6 +141,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('[Webview Setup] Botão stopButton NÃO ENCONTRADO antes do listener!');
         }
 
+        if (allowDeletionCheckbox) {
+            allowDeletionCheckbox.addEventListener('change', () => {
+                allowDeletion = allowDeletionCheckbox.checked;
+                vscode.postMessage({
+                    command: 'updateAllowDeletion',
+                    data: allowDeletion
+                });
+            });
+        }
+
         let debounceTimer;
         if (extensionsInput) {
             extensionsInput.addEventListener('input', () => {
@@ -159,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentSourceDir = message.data.sourceDir || '';
                     currentTargetDir = message.data.targetDir || '';
                     currentExtensions = message.data.extensions || '';
+                    allowDeletion = message.data.allowDeletion || false;
                     isRunning = message.data.isRunning || false;
                     if (logArea) {
                         logArea.value = message.data.logContent || '';

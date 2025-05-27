@@ -6,6 +6,7 @@ import { SyncService } from './SyncService';
 const SOURCE_DIR_KEY = 'godotSync.sourceDir';
 const TARGET_DIR_KEY = 'godotSync.targetDir';
 const EXTENSIONS_KEY = 'godotSync.extensions';
+const ALLOW_DELETION_KEY = 'godotSync.allowDeletion';
 const LOG_FILE_KEY = 'godotSync.log';
 
 export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
@@ -58,6 +59,9 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
                 case 'updateExtensions':
                     this.updateExtensions(message.data);
                     break;
+                case 'updateAllowDeletion':
+                    this.context.globalState.update(ALLOW_DELETION_KEY, message.data);
+                    break;
                 case 'startSync':
                     this.startSync();
                     break;
@@ -79,12 +83,13 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             const sourceDir = this.context.globalState.get<string>(SOURCE_DIR_KEY);
             const targetDir = this.context.globalState.get<string>(TARGET_DIR_KEY);
             const extensions = this.context.globalState.get<string>(EXTENSIONS_KEY, '.gd, .tscn, .tres, .res, .import, .shader, .json, .cfg');
+            const allowDeletion = this.context.globalState.get<boolean>(ALLOW_DELETION_KEY, false);
             const isRunning = this.syncService.getIsRunning();
             const logContent = this.logBuffer.join('\n');
 
             this._view.webview.postMessage({
                 command: 'updateConfig',
-                data: { sourceDir, targetDir, extensions, isRunning, logContent }
+                data: { sourceDir, targetDir, extensions, allowDeletion, isRunning, logContent }
             });
         }
     }
@@ -143,6 +148,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
         const targetDir = this.context.globalState.get<string>(TARGET_DIR_KEY);
         const extensionsString = this.context.globalState.get<string>(EXTENSIONS_KEY, '');
         const extensions = extensionsString.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        const allowDeletion = this.context.globalState.get<boolean>(ALLOW_DELETION_KEY, false);
 
         if (!sourceDir || !targetDir) {
             vscode.window.showErrorMessage('Godot Sync: Please select both Source and Target directories in the Godot Sync panel.');
@@ -155,7 +161,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             return;
         }
 
-        this.syncService.start(sourceDir, targetDir, extensions);
+        this.syncService.start(sourceDir, targetDir, extensions, allowDeletion);
     }
 
     public stopSync() {
@@ -202,7 +208,12 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
                     <input type="text" id="extensions" placeholder=".gd, .tscn, .tres, .res, ...">
                 </div>
 
-                <p class="warning-message"><em>Warning: Sync is one-way (Source → Target). Changes made directly in the Target folder may be overwritten.</em></p>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="allowDeletion" />
+                    <label for="allowDeletion">Allow file deletion in target</label>
+                </div>
+
+                <p class="warning-message"><em>Warning: Sync is one-way (Source → Target). Files in Target may be overwritten or deleted.</em></p>
 
                 <div id="status">Status: Initializing...</div>
 
