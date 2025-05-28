@@ -25,7 +25,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             (message) => this.logMessage(message),
             (isRunning) => this.updateStatus(isRunning)
         );
-        this.logBuffer = this.context.globalState.get<string[]>(LOG_FILE_KEY, []);
+        this.logBuffer = this.context.workspaceState.get<string[]>(LOG_FILE_KEY, []);
     }
 
     resolveWebviewView(
@@ -60,7 +60,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
                     this.updateExtensions(message.data);
                     break;
                 case 'updateAllowDeletion':
-                    this.context.globalState.update(ALLOW_DELETION_KEY, message.data);
+                    this.context.workspaceState.update(ALLOW_DELETION_KEY, message.data);
                     break;
                 case 'startSync':
                     this.startSync();
@@ -80,10 +80,10 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
 
     private sendInitialConfig() {
         if (this._view) {
-            const sourceDir = this.context.globalState.get<string>(SOURCE_DIR_KEY);
-            const targetDir = this.context.globalState.get<string>(TARGET_DIR_KEY);
-            const extensions = this.context.globalState.get<string>(EXTENSIONS_KEY, '.gd, .tscn, .tres, .res, .import, .shader, .json, .cfg');
-            const allowDeletion = this.context.globalState.get<boolean>(ALLOW_DELETION_KEY, false);
+            const sourceDir = this.context.workspaceState.get<string>(SOURCE_DIR_KEY);
+            const targetDir = this.context.workspaceState.get<string>(TARGET_DIR_KEY);
+            const extensions = this.context.workspaceState.get<string>(EXTENSIONS_KEY, '.gd, .tscn, .tres, .res, .import, .shader, .json, .cfg');
+            const allowDeletion = this.context.workspaceState.get<boolean>(ALLOW_DELETION_KEY, false);
             const isRunning = this.syncService.getIsRunning();
             const logContent = this.logBuffer.join('\n');
 
@@ -100,7 +100,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
             this.logBuffer.shift();
         }
 
-        this.context.globalState.update(LOG_FILE_KEY, this.logBuffer);
+        this.context.workspaceState.update(LOG_FILE_KEY, this.logBuffer);
 
         if (this._view) {
             this._view.webview.postMessage({ command: 'log', data: message });
@@ -124,7 +124,7 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
         const folderUri = await vscode.window.showOpenDialog(options);
         if (folderUri && folderUri[0]) {
             const selectedPath = folderUri[0].fsPath;
-            await this.context.globalState.update(configKey, selectedPath);
+            await this.context.workspaceState.update(configKey, selectedPath);
             if (this._view) {
                 this._view.webview.postMessage({ command: messageCommand, data: selectedPath });
             }
@@ -138,17 +138,17 @@ export class GodotSyncViewProvider implements vscode.WebviewViewProvider {
                                                     .map(ext => ext.trim())
                                                     .filter(ext => ext.length > 0)
                                                     .join(', ');
-            await this.context.globalState.update(EXTENSIONS_KEY, sanitizedExtensions);
+            await this.context.workspaceState.update(EXTENSIONS_KEY, sanitizedExtensions);
             this.logMessage(`Extensions updated to: ${sanitizedExtensions}`);
         }
     }
 
     public startSync() {
-        const sourceDir = this.context.globalState.get<string>(SOURCE_DIR_KEY);
-        const targetDir = this.context.globalState.get<string>(TARGET_DIR_KEY);
-        const extensionsString = this.context.globalState.get<string>(EXTENSIONS_KEY, '');
+        const sourceDir = this.context.workspaceState.get<string>(SOURCE_DIR_KEY);
+        const targetDir = this.context.workspaceState.get<string>(TARGET_DIR_KEY);
+        const extensionsString = this.context.workspaceState.get<string>(EXTENSIONS_KEY, '');
         const extensions = extensionsString.split(',').map(s => s.trim()).filter(s => s.length > 0);
-        const allowDeletion = this.context.globalState.get<boolean>(ALLOW_DELETION_KEY, false);
+        const allowDeletion = this.context.workspaceState.get<boolean>(ALLOW_DELETION_KEY, false);
 
         if (!sourceDir || !targetDir) {
             vscode.window.showErrorMessage('Godot Sync: Please select both Source and Target directories in the Godot Sync panel.');
