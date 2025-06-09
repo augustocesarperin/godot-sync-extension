@@ -2,17 +2,18 @@
   "name": "godot-sync",
   "displayName": "Godot Project Sync",
   "description": "A VS Code extension that automatically synchronizes files (like .gd, .cs, .tscn) from a source directory to the target Godot game project, simplifying workflows.",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "publisher": "AbstratusLabs",
   "author": {
     "name": "Augusto Cesar Perin"
   },
   "license": "MIT",
-  "readme": "./MARKETPLACE_README.md",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
+    "Programming Languages",
+    "SCM Providers",
     "Other"
   ],
   "activationEvents": [
@@ -86,5 +87,5 @@
     "type": "git",
     "url": "https://github.com/augustocesarperin/godot-sync-extension.git"
   },
-  "icon": "icon.png"
+  "icon": "icon_it.png"
 }
