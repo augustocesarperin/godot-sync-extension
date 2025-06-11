@@ -16,6 +16,9 @@ export class SyncService {
     private targetDir: string | null = null;
     private extensions: string[] = [];
     private allowDeletion = false;
+    private includeHidden = false;
+    private usePolling = false;
+    private syncImportFiles = true;
     private isRunning = false;
     private log: LogFunction;
     private updateStatus: StatusFunction;
@@ -31,7 +34,7 @@ export class SyncService {
         this.updateStatus = statusCallback;
     }
 
-    public start(sourceDir: string, targetDir: string, extensions: string[], allowDeletion: boolean): boolean {
+    public start(sourceDir: string, targetDir: string, extensions: string[], allowDeletion: boolean, includeHidden?: boolean, usePolling?: boolean, syncImportFiles?: boolean): boolean {
         if (this.isRunning) {
             this.log('Sync service is already running.');
             return false;
@@ -43,27 +46,53 @@ export class SyncService {
             return false;
         }
 
+		// Safety: prevent recursive or overlapping paths (Source == Target, or one contains the other)
+		try {
+			const resolvedSource = path.resolve(sourceDir);
+			const resolvedTarget = path.resolve(targetDir);
+			const normalize = (p: string) => process.platform === 'win32' ? p.toLowerCase() : p;
+			const srcN = normalize(resolvedSource);
+			const dstN = normalize(resolvedTarget);
+			const isEqual = srcN === dstN;
+			const isSubPath = (a: string, b: string) => a.startsWith(b + path.sep);
+			if (isEqual || isSubPath(srcN, dstN) || isSubPath(dstN, srcN)) {
+				this.log('Error: Source and Target must not overlap or be the same directory.');
+				vscode.window.showErrorMessage('Godot Sync: Source and Target must not overlap or be the same directory.');
+				return false;
+			}
+		} catch (_e) {
+			// ignore normalization errors; stat will handle
+		}
+
         Promise.all([fs.stat(sourceDir), fs.stat(targetDir)])
             .then(([sourceStats, targetStats]) => {
                 if (!sourceStats.isDirectory() || !targetStats.isDirectory()) {
                     throw new Error('Source and Target paths must be directories.');
                 }
 
-                this.sourceDir = sourceDir;
-                this.targetDir = targetDir;
-                this.extensions = extensions.map(ext => ext.startsWith('.') ? ext : `.${ext}`);
-                this.allowDeletion = allowDeletion;
+				this.sourceDir = sourceDir;
+				this.targetDir = targetDir;
+				this.extensions = extensions.map(ext => ext.startsWith('.') ? ext : `.${ext}`);
+				this.allowDeletion = allowDeletion;
+				this.includeHidden = !!includeHidden;
 
                 this.log(`Starting watcher on: ${this.sourceDir}`);
                 this.log(`Target directory: ${this.targetDir}`);
                 this.log(`Watching extensions: ${this.extensions.join(', ')}`);
                 this.log(`File deletion is ${this.allowDeletion ? 'ENABLED' : 'DISABLED'}.`);
 
+                this.usePolling = !!usePolling;
+                this.syncImportFiles = syncImportFiles === undefined ? true : !!syncImportFiles;
+
                 this.watcher = chokidar.watch(this.sourceDir, {
-                    ignored: /(^|[\\\\])\../,
+                    // Always ignore Godot's internal cache directories
+                    // Also optionally ignore dotfiles unless includeHidden is true
+                    ignored: (p: string) => this.shouldIgnorePath(p),
                     persistent: true,
                     depth: undefined,
-                    usePolling: false,
+                    usePolling: this.usePolling,
+                    awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
+                    followSymlinks: false,
                 });
 
                 this.watcher
@@ -130,8 +159,9 @@ export class SyncService {
         if (operation) {
             try {
                 await this.handleFileSync(operation.filePath, operation.eventType);
-            } catch (error: any) {
-                this.log(`Failed to process ${operation.filePath}. Error: ${error.message}`);
+            } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : String(error);
+                this.log(`Failed to process ${operation.filePath}. Error: ${msg}`);
             }
         }
     
@@ -147,9 +177,18 @@ export class SyncService {
             const files = await fs.readdir(dir, { withFileTypes: true });
             for (const file of files) {
                 const filePath = path.join(dir, file.name);
+                // Always skip Godot cache directories (Godot 4: .godot/, Godot 3: .import/)
+                if (file.isDirectory() && (file.name === '.godot' || file.name === '.import')) {
+                    continue;
+                }
+                // Skip hidden entries unless includeHidden is enabled
+                if (!this.includeHidden && file.name.startsWith('.')) {
+                    continue;
+                }
                 if (file.isDirectory()) {
                     await walk(filePath);
                 } else if (file.isFile()) {
+                    // Do not skip *.import here; these are sidecar metadata files and may be included via extensions
                     this.addToQueue(filePath, 'add');
                 }
             }
@@ -158,9 +197,10 @@ export class SyncService {
         try {
             await walk(this.sourceDir);
             this.log('Initial sync queued.');
-        } catch (error: any) {
-            this.log(`Error during initial sync: ${error.message}`);
-            vscode.window.showErrorMessage(`Godot Sync: Initial sync error - ${error.message}`);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            this.log(`Error during initial sync: ${msg}`);
+            vscode.window.showErrorMessage(`Godot Sync: Initial sync error - ${msg}`);
             this.stop();
         }
     }
@@ -176,11 +216,24 @@ export class SyncService {
         if (!this.extensions.includes(fileExtension)) {
             return;
         }
+        if (fileExtension === '.import' && !this.syncImportFiles) {
+            return;
+        }
 
         const filename = path.basename(filePath);
         const relativePath = path.relative(this.sourceDir, filePath);
         const targetPath = path.join(this.targetDir, relativePath);
         const targetSubDir = path.dirname(targetPath);
+
+        // Safety: validate resolved destination remains inside targetDir
+        const resolvedTargetRoot = path.resolve(this.targetDir);
+        const resolvedTargetPath = path.resolve(targetPath);
+        const isInside = resolvedTargetPath === resolvedTargetRoot || resolvedTargetPath.startsWith(resolvedTargetRoot + path.sep);
+        if (!isInside) {
+            this.log(`Security block: Attempted to write outside target root: ${relativePath}`);
+            vscode.window.showErrorMessage('Godot Sync: Blocked writing outside of target directory.');
+            return;
+        }
 
         try {
             if (eventType === 'add' || eventType === 'change') {
@@ -189,8 +242,8 @@ export class SyncService {
                 let sourceStat;
                 try {
                     sourceStat = await fs.stat(filePath);
-                } catch (err: any) {
-                    if (err.code === 'ENOENT') {
+                } catch (err: unknown) {
+                    if (this.getErrorCode(err) === 'ENOENT') {
                         this.log(`Skipped (source file gone): ${relativePath}`);
                         return;
                     }
@@ -203,13 +256,14 @@ export class SyncService {
                         this.log(`Skipped (destination is newer): ${relativePath}`);
                         return;
                     }
-                } catch (err: any) {
-                    if (err.code !== 'ENOENT') {
-                        this.log(`Warning: Could not stat target ${relativePath}. Proceeding. Error: ${err.message}`);
+                } catch (err: unknown) {
+                    if (this.getErrorCode(err) !== 'ENOENT') {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        this.log(`Warning: Could not stat target ${relativePath}. Proceeding. Error: ${msg}`);
                     }
                 }
 
-                await fs.copyFile(filePath, targetPath);
+                await this.copyFileAtomicWithRetry(filePath, targetPath);
                 this.log(`Copied: ${relativePath}`);
 
             } else if (eventType === 'unlink') {
@@ -218,17 +272,18 @@ export class SyncService {
                     return;
                 }
                 try {
-                    await fs.unlink(targetPath);
+                    await this.unlinkWithRetry(targetPath);
                     this.log(`Deleted: ${relativePath}`);
-                } catch (err: any) {
-                    if (err.code !== 'ENOENT') {
+                } catch (err: unknown) {
+                    if (this.getErrorCode(err) !== 'ENOENT') {
                         throw err;
                     }
                 }
             }
-        } catch (error: any) {
-            this.log(`Error processing file ${relativePath}: ${error.message}`);
-            vscode.window.showErrorMessage(`Godot Sync: Error processing ${filename}: ${error.message}`);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            this.log(`Error processing file ${relativePath}: ${msg}`);
+            // Avoid toast spam; only show for critical watcher/initialization
         }
     }
 
@@ -240,5 +295,71 @@ export class SyncService {
 
     public dispose(): void {
         this.stop();
+    }
+
+    private shouldIgnorePath(p: string): boolean {
+        try {
+            if (!this.sourceDir) return false;
+            const rel = path.relative(this.sourceDir, p);
+            const parts = rel.split(path.sep);
+
+            // Always ignore Godot cache directories (Godot 4: .godot/, Godot 3: .import/)
+            if (parts.includes('.godot')) return true;
+            if (parts.includes('.import')) return true;
+            if (!this.includeHidden) {
+                if (parts.some(seg => seg.startsWith('.'))) return true;
+            }
+        } catch (_e) { /* ignore */ }
+        return false;
+    }
+
+    private async withRetry<T>(opName: string, fn: () => Promise<T>, retries = 3, baseDelayMs = 50): Promise<T> {
+        let attempt = 0;
+        let lastErr: unknown;
+        while (attempt <= retries) {
+            try {
+                return await fn();
+            } catch (err: unknown) {
+                lastErr = err;
+                const code = this.getErrorCode(err);
+                if (!['EBUSY', 'EPERM', 'ETXTBSY', 'EACCES'].includes(String(code))) break;
+                const delay = baseDelayMs * Math.pow(3, attempt);
+                await new Promise(res => setTimeout(res, delay));
+                attempt++;
+            }
+        }
+        const lastMsg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+        throw new Error(`${opName} failed after retries: ${lastMsg}`);
+    }
+
+    private async copyFileAtomicWithRetry(src: string, dst: string): Promise<void> {
+        const tmp = dst + `.__godotsync_tmp_${process.pid}_${Math.random().toString(36).slice(2)}`;
+        await this.withRetry('copyFile(tmp)', async () => {
+            await fs.copyFile(src, tmp);
+        });
+        await this.withRetry('removeExistingTarget', async () => {
+            try { await fs.unlink(dst); } catch (e: unknown) { if (this.getErrorCode(e) !== 'ENOENT') throw e; }
+        }, 2, 30).catch((_err) => { return; });
+        await this.withRetry('rename(tmp->dst)', async () => {
+            await fs.rename(tmp, dst);
+        });
+        // Cleanup stray tmp if rename somehow left it
+        try { await fs.unlink(tmp); } catch { /* ignore */ }
+    }
+
+    private async unlinkWithRetry(p: string): Promise<void> {
+        await this.withRetry('unlink', async () => {
+            await fs.unlink(p);
+        });
+    }
+
+    private getErrorCode(err: unknown): string | number | undefined {
+        if (typeof err === 'object' && err !== null && 'code' in err) {
+            const code = (err as { code?: unknown }).code;
+            if (typeof code === 'string' || typeof code === 'number') {
+                return code;
+            }
+        }
+        return undefined;
     }
 }
