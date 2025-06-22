@@ -10,10 +10,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetDirInput = document.getElementById('targetDir');
         const extensionsInput = document.getElementById('extensions');
         const allowDeletionCheckbox = document.getElementById('allowDeletion');
+        const includeHiddenCheckbox = document.getElementById('includeHidden');
         const statusDiv = document.getElementById('status');
         const logArea = document.getElementById('logArea'); 
+        const usePollingCheckbox = document.getElementById('usePolling');
+        const syncImportFilesCheckbox = document.getElementById('syncImportFiles');
+        const presetSelect = document.getElementById('presetSelect');
+        const deletionWarning = document.getElementById('deletionWarning');
+        const pollingBanner = document.getElementById('pollingBanner');
+        const enablePollingNowBtn = document.getElementById('enablePollingNow');
+        const dismissPollingBannerBtn = document.getElementById('dismissPollingBanner');
+        const clearLogButton = document.getElementById('clearLogButton');
 
-        if (!sourceDirInput || !targetDirInput || !extensionsInput || !statusDiv || !logArea || !allowDeletionCheckbox) {
+        if (!sourceDirInput || !targetDirInput || !extensionsInput || !statusDiv || !logArea || !allowDeletionCheckbox || !includeHiddenCheckbox) {
             console.error("[Webview] Erro CRÍTICO inicial: Elementos essenciais da UI faltando no DOM após setTimeout. Verifique os IDs no HTML e no main.js.");
             if (statusDiv) statusDiv.textContent = 'Error: Critical UI elements missing!';
             return; 
@@ -24,9 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentExtensions = '';
         let allowDeletion = false;
         let isRunning = false;
+        let includeHidden = false;
+        let usePolling = false;
+        let syncImportFiles = true;
+        let currentPreset = 'none';
 
         function updateUIState() {
-            if (!sourceDirInput || !targetDirInput || !extensionsInput || !statusDiv || !allowDeletionCheckbox) {
+            if (!sourceDirInput || !targetDirInput || !extensionsInput || !statusDiv || !allowDeletionCheckbox || !includeHiddenCheckbox) {
                 console.error("[Webview] updateUIState: Elementos de input ou statusDiv são null!");
                 return;
             }
@@ -43,6 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
             targetDirInput.value = currentTargetDir || '';
             extensionsInput.value = currentExtensions || '';
             allowDeletionCheckbox.checked = allowDeletion || false;
+            includeHiddenCheckbox.checked = includeHidden || false;
+            if (usePollingCheckbox) usePollingCheckbox.checked = usePolling || false;
+            if (syncImportFilesCheckbox) syncImportFilesCheckbox.checked = syncImportFiles || false;
+            if (presetSelect) presetSelect.value = currentPreset || 'none';
 
             if (isRunning) {
                 statusDiv.style.color = 'var(--vscode-editorWarning-foreground)';
@@ -55,9 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectSourceButtonForUI) selectSourceButtonForUI.disabled = true;
                 if (selectTargetButtonForUI) selectTargetButtonForUI.disabled = true;
                 if (allowDeletionCheckbox) allowDeletionCheckbox.disabled = true;
+                if (includeHiddenCheckbox) includeHiddenCheckbox.disabled = true;
+                if (usePollingCheckbox) usePollingCheckbox.disabled = true;
+                if (syncImportFilesCheckbox) syncImportFilesCheckbox.disabled = true;
+                if (presetSelect) presetSelect.disabled = true;
             } else {
                 statusDiv.style.color = 'var(--vscode-foreground)';
-                statusDiv.textContent = 'Status: Stopped. Press Start Sync.';
+                statusDiv.textContent = 'Status: Set Source & Target.';
                 if (startButtonForUI) startButtonForUI.disabled = false;
                 if (stopButtonForUI) stopButtonForUI.disabled = true;
                 if (sourceDirInput) sourceDirInput.disabled = false;
@@ -66,6 +87,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectSourceButtonForUI) selectSourceButtonForUI.disabled = false;
                 if (selectTargetButtonForUI) selectTargetButtonForUI.disabled = false;
                 if (allowDeletionCheckbox) allowDeletionCheckbox.disabled = false;
+                if (includeHiddenCheckbox) includeHiddenCheckbox.disabled = false;
+                if (usePollingCheckbox) usePollingCheckbox.disabled = false;
+                if (syncImportFilesCheckbox) syncImportFilesCheckbox.disabled = false;
+                if (presetSelect) presetSelect.disabled = false;
+            }
+
+            // Show deletion warning only when allowDeletion is ON
+            if (deletionWarning) {
+                deletionWarning.style.display = allowDeletion ? 'block' : 'none';
             }
         }
         
@@ -121,11 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
                      console.error("[Webview] startButton click: extensionsInput é null!");
                      return;
                 }
-                currentExtensions = extensionsInput.value;
-                vscode.postMessage({
-                    command: 'updateExtensions',
-                    data: currentExtensions
-                });
+                const newVal = (extensionsInput.value || '').trim();
+                if (newVal !== currentExtensions) {
+                    currentExtensions = newVal;
+                    vscode.postMessage({ command: 'updateExtensions', data: currentExtensions });
+                }
                 vscode.postMessage({ command: 'startSync' });
             });
         } else {
@@ -141,6 +171,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('[Webview Setup] Botão stopButton NÃO ENCONTRADO antes do listener!');
         }
 
+        if (clearLogButton) {
+            clearLogButton.addEventListener('click', () => {
+                if (logArea) logArea.value = '';
+                vscode.postMessage({ command: 'clearLog' });
+            });
+        }
+
         if (allowDeletionCheckbox) {
             allowDeletionCheckbox.addEventListener('change', () => {
                 allowDeletion = allowDeletionCheckbox.checked;
@@ -148,6 +185,76 @@ document.addEventListener('DOMContentLoaded', () => {
                     command: 'updateAllowDeletion',
                     data: allowDeletion
                 });
+                if (deletionWarning) {
+                    deletionWarning.style.display = allowDeletion ? 'block' : 'none';
+                }
+            });
+        }
+
+        if (includeHiddenCheckbox) {
+            includeHiddenCheckbox.addEventListener('change', () => {
+                includeHidden = includeHiddenCheckbox.checked;
+                vscode.postMessage({
+                    command: 'updateIncludeHidden',
+                    data: includeHidden
+                });
+            });
+        }
+
+        if (usePollingCheckbox) {
+            usePollingCheckbox.addEventListener('change', () => {
+                usePolling = usePollingCheckbox.checked;
+                vscode.postMessage({
+                    command: 'updateUsePolling',
+                    data: usePolling
+                });
+            });
+        }
+
+        if (syncImportFilesCheckbox) {
+            syncImportFilesCheckbox.addEventListener('change', () => {
+                syncImportFiles = syncImportFilesCheckbox.checked;
+                vscode.postMessage({
+                    command: 'updateSyncImportFiles',
+                    data: syncImportFiles
+                });
+            });
+        }
+
+        if (enablePollingNowBtn) {
+            enablePollingNowBtn.addEventListener('click', () => {
+                if (usePollingCheckbox) {
+                    usePollingCheckbox.checked = true;
+                    usePolling = true;
+                    vscode.postMessage({ command: 'updateUsePolling', data: true });
+                }
+                if (pollingBanner) pollingBanner.style.display = 'none';
+            });
+        }
+
+        if (dismissPollingBannerBtn) {
+            dismissPollingBannerBtn.addEventListener('click', () => {
+                if (pollingBanner) pollingBanner.style.display = 'none';
+            });
+        }
+
+        if (presetSelect) {
+            presetSelect.addEventListener('change', () => {
+                currentPreset = presetSelect.value || 'none';
+                vscode.postMessage({ command: 'updatePreset', data: currentPreset });
+                // Fill only the input; user can edit before Start
+                const map = {
+                    none: '',
+                    scripts: '.gd, .tscn, .tres, .res, .import, .shader, .json, .cfg',
+                    minimal: '.gd, .tscn',
+                    assets: '.png, .jpg, .jpeg, .ogg, .wav, .import'
+                };
+                const presetVal = map[currentPreset] || '';
+                if (presetVal && extensionsInput) {
+                    extensionsInput.value = presetVal;
+                    currentExtensions = presetVal;
+                    vscode.postMessage({ command: 'updateExtensions', data: currentExtensions });
+                }
             });
         }
 
@@ -156,11 +263,11 @@ document.addEventListener('DOMContentLoaded', () => {
             extensionsInput.addEventListener('input', () => {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
-                    currentExtensions = extensionsInput.value;
-                    vscode.postMessage({
-                        command: 'updateExtensions',
-                        data: currentExtensions
-                    });
+                    const newVal = (extensionsInput.value || '').trim();
+                    if (newVal !== currentExtensions) {
+                        currentExtensions = newVal;
+                        vscode.postMessage({ command: 'updateExtensions', data: currentExtensions });
+                    }
                 }, 500);
             });
         } else {
@@ -175,6 +282,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTargetDir = message.data.targetDir || '';
                     currentExtensions = message.data.extensions || '';
                     allowDeletion = message.data.allowDeletion || false;
+                    includeHidden = message.data.includeHidden || false;
+                    usePolling = message.data.usePolling || false;
+                    syncImportFiles = (typeof message.data.syncImportFiles === 'boolean') ? message.data.syncImportFiles : true;
+                    currentPreset = message.data.preset || 'none';
                     isRunning = message.data.isRunning || false;
                     if (logArea) {
                         logArea.value = message.data.logContent || '';
@@ -182,11 +293,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         console.error("[Webview updateConfig] logArea é null!");
                     }
+                    // Environment hint for polling banner
+                    if (pollingBanner && !isRunning) {
+                        const hint = message.data.envHint || {};
+                        const remote = hint.remoteName || '';
+                        const shouldHint = (remote && (remote.includes('wsl') || remote.includes('dev-container') || remote.includes('ssh'))) || hint.isUNC;
+                        pollingBanner.style.display = shouldHint ? 'flex' : 'none';
+                    }
                     updateUIState();
                     if (!isRunning && currentSourceDir && currentTargetDir) {
                         updateStatus('Ready. Press Start Sync.');
                     } else if (!isRunning) {
-                        updateStatus('Configure source and target directories.');
+                        updateStatus('Set Source & Target.');
                     }
                     break;
                 case 'updateSourceDir':
