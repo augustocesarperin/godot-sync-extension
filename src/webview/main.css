@@ -78,6 +78,30 @@ button:disabled {
     gap: 10px;
 }
 
+.button-secondary {
+    background-color: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+    color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+}
+
+.button-small {
+    padding: 2px 8px;
+    font-size: 90%;
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    margin: 10px 0 12px 0;
+}
+
+.checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--vscode-foreground);
+}
+
 #status {
     margin-bottom: 10px;
     font-weight: bold;
@@ -96,6 +120,18 @@ button:disabled {
     resize: none;
 }
 
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 6px;
+}
+
+.log-title {
+    font-weight: bold;
+}
+
 #logArea:focus {
      outline: 1px solid var(--vscode-focusBorder);
      outline-offset: -1px;
@@ -109,6 +145,28 @@ button:disabled {
     padding: 5px;
     border-left: 3px solid var(--vscode-editorWarning-foreground);
     background-color: var(--vscode-editorWarning-background);
+}
+
+.hint-inline {
+    color: var(--vscode-descriptionForeground);
+    margin: 6px 0 6px 0;
+}
+
+.banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 8px;
+    border-left: 3px solid var(--vscode-editorWarning-foreground);
+    background-color: var(--vscode-editorWarning-background);
+    color: var(--vscode-foreground);
+    margin-bottom: 8px;
+}
+
+.banner-actions {
+    display: inline-flex;
+    gap: 8px;
 }
 
 footer {
