@@ -1,17 +1,27 @@
+# Exclude tests and sources; ship compiled output only
+**/*.spec.ts
+**/*.test.ts
+src/**
+tests/**
 .vscode/**
 .vscode-test/**
-src/**
-out/**/*.map
-*.vsix
-
-# Git files
 .git/**
-.gitignore
-.gitattributes
+*.vsix
+repomix-output.xml
+memory-bank/**
+**/*.map
 
+# Extra excludes to keep VSIX clean
+READMEgh.md
+icon_new.png
+icon_marketplace_256.png
+icon_it2.png
+.cursor/**
+.cursorindexingignore
+.specstory/**
+vitest.config.ts
+vitest.config.js
+vitest.config.js.map
 tsconfig.json
-.eslintrc.json
-
-
-*.log
-
+out/webview/index.html
+.gitignore

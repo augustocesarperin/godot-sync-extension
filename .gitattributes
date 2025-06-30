@@ -14,4 +14,5 @@
 *.png binary
 *.jpg binary
 *.jpeg binary
-*.gif binary
+*.gif binarypackage-lock.json -diff
+package-lock.json linguist-generated=true
