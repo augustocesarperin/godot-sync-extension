@@ -177,18 +177,16 @@ export class SyncService {
             const files = await fs.readdir(dir, { withFileTypes: true });
             for (const file of files) {
                 const filePath = path.join(dir, file.name);
-                // Always skip Godot cache directories (Godot 4: .godot/, Godot 3: .import/)
                 if (file.isDirectory() && (file.name === '.godot' || file.name === '.import')) {
                     continue;
                 }
-                // Skip hidden entries unless includeHidden is enabled
                 if (!this.includeHidden && file.name.startsWith('.')) {
                     continue;
                 }
                 if (file.isDirectory()) {
                     await walk(filePath);
                 } else if (file.isFile()) {
-                    // Do not skip *.import here; these are sidecar metadata files and may be included via extensions
+                    // Do not skip *.import here
                     this.addToQueue(filePath, 'add');
                 }
             }
@@ -225,7 +223,6 @@ export class SyncService {
         const targetPath = path.join(this.targetDir, relativePath);
         const targetSubDir = path.dirname(targetPath);
 
-        // Safety: validate resolved destination remains inside targetDir
         const resolvedTargetRoot = path.resolve(this.targetDir);
         const resolvedTargetPath = path.resolve(targetPath);
         const isInside = resolvedTargetPath === resolvedTargetRoot || resolvedTargetPath.startsWith(resolvedTargetRoot + path.sep);
@@ -283,7 +280,7 @@ export class SyncService {
         } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : String(error);
             this.log(`Error processing file ${relativePath}: ${msg}`);
-            // Avoid toast spam; only show for critical watcher/initialization
+            // Avoid spam
         }
     }
 
@@ -303,7 +300,6 @@ export class SyncService {
             const rel = path.relative(this.sourceDir, p);
             const parts = rel.split(path.sep);
 
-            // Always ignore Godot cache directories (Godot 4: .godot/, Godot 3: .import/)
             if (parts.includes('.godot')) return true;
             if (parts.includes('.import')) return true;
             if (!this.includeHidden) {

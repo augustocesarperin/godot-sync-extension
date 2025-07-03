@@ -293,7 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         console.error("[Webview updateConfig] logArea é null!");
                     }
-                    // Environment hint for polling banner
                     if (pollingBanner && !isRunning) {
                         const hint = message.data.envHint || {};
                         const remote = hint.remoteName || '';
