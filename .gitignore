@@ -1,12 +1,10 @@
-# Dependencies
 /node_modules
-# A linha /pnpm-lock.yaml foi REMOVIDA daqui. É recomendado versionar o lock file.
 
 # Build output
 /out
 *.vsix
 
-# VS Code settings specific to this project
+# VS Code settings s
 /.vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -22,3 +20,6 @@
 .DS_Store
 *.pem
 *.log
+
+vitest.config.js
+vitest.config.js.map
