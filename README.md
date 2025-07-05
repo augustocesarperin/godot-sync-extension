@@ -25,8 +25,3 @@ Requires [Node.js](https://nodejs.org/) (18.x or higher).
 
 ### Build
 *   `npm run build`
-
----
-**Author:** Augusto Cesar Perin
-**Publisher:** Abstratus Labs
-**License:** MIT 
